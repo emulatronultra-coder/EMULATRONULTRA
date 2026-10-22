@@ -1,0 +1,8 @@
+{
+  "name": "EMULATRONULTRA",
+  "description": "Multi-system retro workstation emulator featuring Bevy Atari 8-Bit WebGL2 core, MAME 2003 arcade cabinets, IBM PC MS-DOS, Atari ST, and classic consoles with virtual media support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

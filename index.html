@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EMULATRONULTRA</title>
+    <meta name="description" content="Multi-system retro workstation emulator featuring Bevy Atari 8-Bit WebGL2 core, MAME 2003 arcade cabinets, IBM PC MS-DOS, Atari ST, and classic consoles with virtual media support." />
+    <meta property="og:title" content="EMULATRONULTRA" />
+    <meta property="og:description" content="Multi-system retro workstation emulator featuring Bevy Atari 8-Bit WebGL2 core, MAME 2003 arcade cabinets, IBM PC MS-DOS, Atari ST, and classic consoles with virtual media support." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <script>
+      window.global = window;
+      if (typeof window.setImmediate === 'undefined') {
+        window.setImmediate = function(fn, ...args) {
+          return setTimeout(fn, 0, ...args);
+        };
+        window.clearImmediate = function(id) {
+          clearTimeout(id);
+        };
+      }
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

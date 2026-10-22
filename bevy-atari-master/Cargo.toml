@@ -1,0 +1,141 @@
+[package]
+name = "bevy_atari"
+version = "0.1.0"
+authors = []
+edition = "2021"
+resolver = "2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = [
+  "egui",
+  "webgl",
+]
+
+egui = ["bevy_egui"]
+webgl = ["bevy_atari_antic/webgl"]
+webgpu = []
+
+# x11 = [
+#   "winit/x11"
+# ]
+
+[dependencies]
+crossbeam-channel = "0.5.0"
+bevy_egui = {version="0.11.1", optional=true}
+# winit = {version = "0.25.0", features = ["web-sys"], default-features = false}
+emulator_6502 = {version="1.1.0", features=["binary_coded_decimal", "implementation_transparency", "illegal_opcodes"]}
+disasm6502 = "0.2"
+rand = {version = "0.8", features = ["small_rng"]}
+once_cell = "1.5.2"
+parking_lot = "0.12.0"
+bitflags = "1.2"
+flate2 = "1.0"
+gilrs = {version="0.8", features = ["wasm-bindgen"]}
+# wee_alloc = {version="0.4.5", features = ["static_array_backend"]}
+bevy_atari_antic = {path="./bevy-atari-antic/", default-features=false}
+gdbstub = "0.6"
+gdbstub_mos_arch = {git="https://github.com/mrk-its/gdbstub_mos_arch"}
+serde_json = "1.0"
+serde_urlencoded = "0.7"
+serde = "1.0"
+
+[target.'cfg(target_os="linux")'.dependencies]
+winit = {version = "0.26", features = ["x11"], default-features = false}
+
+[target.'cfg(target_arch="wasm32")'.dependencies]
+js-sys = "0.3"
+wasm-bindgen = "0.2.78"
+wasm-bindgen-futures = "0"
+tracing-wasm = "0.2.1"
+
+[target.'cfg(not(target_arch="wasm32"))'.dependencies]
+web-audio-api = {version="0.15", default-features = false}
+
+
+[dependencies.bevy]
+version = "0.6"
+# git = "https://github.com/bevyengine/bevy"
+# branch = "main"
+# path = "../bevy"
+default_features = false
+features = ["bevy_gilrs"]
+
+[target.'cfg(target_arch="wasm32")'.dependencies.web-sys]
+version = "0.3"
+features = [
+  'AudioContext',
+  'AudioContextState',
+  'AudioDestinationNode',
+  'AudioBufferSourceNode',
+  'AudioBuffer',
+  'AudioNode',
+  'AudioParam',
+  'GainNode',
+  'OscillatorNode',
+  'OscillatorType',
+  'Window',
+  'Location',
+  'MessagePort',
+  'Storage',
+]
+
+[patch.crates-io]
+gilrs = {git="https://gitlab.com/mrk2/gilrs.git", branch="remove_stdweb"}
+gilrs-core = {git="https://gitlab.com/mrk2/gilrs.git", branch="remove_stdweb"}
+bevy = {git = "https://github.com/mrk-its/bevy.git", branch="0.6.1-fps"}
+
+# glow = {git="https://github.com/grovesNL/glow"}
+# glow = {path="../glow"}
+# naga = {git="https://github.com/gfx-rs/naga", rev="29571cc"}
+
+# [patch.crates-io.wgpu]
+#git = "https://github.com/mrk-its/wgpu"
+#branch = "master"
+# path = "../wgpu/wgpu"
+
+[patch.crates-io.emulator_6502]
+git = "https://github.com/mrk-its/emulator_6502/"
+branch="speed_improvements"
+
+# [patch.crates-io.bevy_egui]
+#git = "https://github.com/mrk-its/bevy_egui/"
+#branch = "bevy-pipelined-optimized-wgpu-master"
+# path = "../bevy_egui"
+
+# [patch."https://github.com/bevyengine/bevy"]
+# bevy = {git="https://github.com/mrk-its/bevy", branch="bevy_atari_webgpu"}
+# bevy = {path="../bevy"}
+
+# [profile.dev.package."*"]
+# opt-level = 2
+# debug = false
+# debug-assertions = false
+# overflow-checks = false
+# incremental = true
+# codegen-units = 16
+
+# wgpu = {path="../wgpu/wgpu/"}
+# glow = {path="../glow"}
+
+[profile.dev]
+opt-level = 2
+# debug = false
+# debug-assertions = false
+# overflow-checks = false
+lto = false
+panic = 'unwind'
+incremental = true
+codegen-units = 16
+rpath = false
+
+# [profile.release.package."*"]
+# codegen-units = 1
+# opt-level = 3
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 'z'
+panic = "abort"
