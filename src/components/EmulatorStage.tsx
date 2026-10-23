@@ -187,6 +187,37 @@ const EmulatorStage = forwardRef<StageRefHandle, Props>(function EmulatorStage({
   }, [turboSpeedMs, autoTurboA, autoTurboB, autoTurboAB]);
 
   useImperativeHandle(ref, () => ({
+    getIframeElement: () => iframeRef.current,
+    getCanvasElement: () => {
+      if (iframeRef.current && iframeRef.current.contentDocument) {
+        return iframeRef.current.contentDocument.querySelector('canvas');
+      }
+      return null;
+    },
+    captureScreenshot: (): Promise<string | null> => {
+      return new Promise((resolve) => {
+        if (!iframeRef.current || !iframeRef.current.contentWindow) {
+          resolve(null);
+          return;
+        }
+        const channel = new MessageChannel();
+        const timeout = setTimeout(() => resolve(null), 2500);
+        channel.port1.onmessage = (evt) => {
+          clearTimeout(timeout);
+          if (evt.data && evt.data.success && evt.data.result?.dataUrl) {
+            resolve(evt.data.result.dataUrl);
+          } else {
+            resolve(null);
+          }
+        };
+        try {
+          iframeRef.current.contentWindow.postMessage({ type: 'EJS_GET_SCREENSHOT' }, '*', [channel.port2]);
+        } catch {
+          clearTimeout(timeout);
+          resolve(null);
+        }
+      });
+    },
     getStateSnapshot: (): Promise<ArrayBuffer | null> => {
       return new Promise((resolve) => {
         if (!iframeRef.current || !iframeRef.current.contentWindow) {
@@ -540,6 +571,22 @@ const EmulatorStage = forwardRef<StageRefHandle, Props>(function EmulatorStage({
                 } else if (btn === 'B') {
                     fireKeyEvent('KeyX', 'x', 88, true);
                     fireKeyEvent('KeyS', 's', 83, true);
+                } else if (btn === 'UP') {
+                    fireKeyEvent('ArrowUp', 'ArrowUp', 38, true);
+                    fireKeyEvent('KeyW', 'w', 87, true);
+                } else if (btn === 'DOWN') {
+                    fireKeyEvent('ArrowDown', 'ArrowDown', 40, true);
+                    fireKeyEvent('KeyS', 's', 83, true);
+                } else if (btn === 'LEFT') {
+                    fireKeyEvent('ArrowLeft', 'ArrowLeft', 37, true);
+                    fireKeyEvent('KeyA', 'a', 65, true);
+                } else if (btn === 'RIGHT') {
+                    fireKeyEvent('ArrowRight', 'ArrowRight', 39, true);
+                    fireKeyEvent('KeyD', 'd', 68, true);
+                } else if (btn === 'TURBO_A') {
+                    startTurbo('A', 40);
+                } else if (btn === 'TURBO_B') {
+                    startTurbo('B', 40);
                 } else if (btn === 'AB') {
                     fireKeyEvent('KeyZ', 'z', 90, true);
                     fireKeyEvent('KeyA', 'a', 65, true);
@@ -599,6 +646,22 @@ const EmulatorStage = forwardRef<StageRefHandle, Props>(function EmulatorStage({
                 } else if (btn === 'B') {
                     fireKeyEvent('KeyX', 'x', 88, false);
                     fireKeyEvent('KeyS', 's', 83, false);
+                } else if (btn === 'UP') {
+                    fireKeyEvent('ArrowUp', 'ArrowUp', 38, false);
+                    fireKeyEvent('KeyW', 'w', 87, false);
+                } else if (btn === 'DOWN') {
+                    fireKeyEvent('ArrowDown', 'ArrowDown', 40, false);
+                    fireKeyEvent('KeyS', 's', 83, false);
+                } else if (btn === 'LEFT') {
+                    fireKeyEvent('ArrowLeft', 'ArrowLeft', 37, false);
+                    fireKeyEvent('KeyA', 'a', 65, false);
+                } else if (btn === 'RIGHT') {
+                    fireKeyEvent('ArrowRight', 'ArrowRight', 39, false);
+                    fireKeyEvent('KeyD', 'd', 68, false);
+                } else if (btn === 'TURBO_A') {
+                    stopTurbo('A');
+                } else if (btn === 'TURBO_B') {
+                    stopTurbo('B');
                 } else if (btn === 'AB') {
                     fireKeyEvent('KeyZ', 'z', 90, false);
                     fireKeyEvent('KeyA', 'a', 65, false);
@@ -681,6 +744,7 @@ const EmulatorStage = forwardRef<StageRefHandle, Props>(function EmulatorStage({
 
             window.addEventListener('message', function(e) {
                 if (!e.data || typeof e.data !== 'object') return;
+                var port = e.ports && e.ports[0];
                 if (e.data.type === 'EJS_PRESS_BTN') {
                     pressButton(e.data.button);
                 } else if (e.data.type === 'EJS_RELEASE_BTN') {
@@ -689,6 +753,29 @@ const EmulatorStage = forwardRef<StageRefHandle, Props>(function EmulatorStage({
                     startTurbo(e.data.button, e.data.speedMs);
                 } else if (e.data.type === 'EJS_STOP_TURBO') {
                     stopTurbo(e.data.button);
+                } else if (e.data.type === 'EJS_GET_SCREENSHOT') {
+                    try {
+                        var canvas = document.querySelector('canvas') || document.querySelector('#game canvas');
+                        if (canvas) {
+                            var dataUrl = canvas.toDataURL('image/png');
+                            port?.postMessage({ success: true, result: { dataUrl: dataUrl, width: canvas.width, height: canvas.height } });
+                        } else {
+                            port?.postMessage({ success: false, error: 'Canvas not found in iframe' });
+                        }
+                    } catch (err) {
+                        port?.postMessage({ success: false, error: String(err) });
+                    }
+                } else if (e.data.type === 'EJS_RESET') {
+                    try {
+                        if (window.EJS_emulator && window.EJS_emulator.gameManager) {
+                            window.EJS_emulator.gameManager.restart();
+                            port?.postMessage({ success: true });
+                        } else {
+                            port?.postMessage({ success: false, error: 'Emulator not ready' });
+                        }
+                    } catch (err) {
+                        port?.postMessage({ success: false, error: String(err) });
+                    }
                 }
             });
 

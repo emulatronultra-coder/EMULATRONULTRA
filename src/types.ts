@@ -77,6 +77,9 @@ export const DEFAULT_UBUNTU_26_CONFIG: UbuntuVmConfig = {
 
 export interface StageRefHandle {
   getStateSnapshot: () => Promise<ArrayBuffer | null>;
+  getIframeElement?: () => HTMLIFrameElement | null;
+  getCanvasElement?: () => HTMLCanvasElement | null;
+  captureScreenshot?: () => Promise<string | null>;
 }
 
 export interface VmHardwareConfig {

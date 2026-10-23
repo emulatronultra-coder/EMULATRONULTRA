@@ -18,6 +18,7 @@ import {
   createAtari8BitDemoRom,
   createAtariStDemoRom,
 } from '../utils/atariDemos';
+import { createNesColorBarsTestRom } from '../lib/ai-bridge/testRoms';
 import { createMameTestRom, createNeoGeoBiosDemo, FAMOUS_MAME_GAMES } from '../utils/mameDemos';
 import {
   Upload,
@@ -714,13 +715,14 @@ export default function WelcomeScreen({
           )}
 
           {/* Quick Load Homebrew / Test Demo for Atari & MAME */}
-          {(config.core === 'atari2600' || config.core === 'atari5200' || config.core === 'atari7800' || config.core === 'atariLynx' || config.core === 'atari8bit' || config.core === 'atarist' || config.core === 'mame') && !config.romFile && (
+          {(config.core === 'nes' || config.core === 'famicom' || config.core === 'atari2600' || config.core === 'atari5200' || config.core === 'atari7800' || config.core === 'atariLynx' || config.core === 'atari8bit' || config.core === 'atarist' || config.core === 'mame') && !config.romFile && (
             <div className="w-full mb-5 flex flex-col items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={async () => {
                   let demoFile: File | null = null;
-                  if (config.core === 'atari2600') demoFile = createAtari2600DemoRom();
+                  if (config.core === 'nes' || config.core === 'famicom') demoFile = createNesColorBarsTestRom();
+                  else if (config.core === 'atari2600') demoFile = createAtari2600DemoRom();
                   else if (config.core === 'atari5200') demoFile = createAtari5200DemoRom();
                   else if (config.core === 'atari7800') demoFile = createAtari7800DemoRom();
                   else if (config.core === 'atariLynx') demoFile = createAtariLynxDemoRom();
@@ -736,7 +738,9 @@ export default function WelcomeScreen({
                 <Sparkles className="w-4 h-4 text-amber-400" />
                 <span>
                   Завантажити тестове демо (
-                  {config.core === 'mame'
+                  {config.core === 'nes' || config.core === 'famicom'
+                    ? 'NES Color Pattern & Hardware Test'
+                    : config.core === 'mame'
                     ? 'MAME Arcade Test Suite & Matrix'
                     : config.core === 'atarist'
                     ? 'Atari ST GEMDOS Color Test'

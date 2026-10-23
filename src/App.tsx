@@ -12,7 +12,7 @@ import {
   UbuntuVmConfig,
   DEFAULT_UBUNTU_26_CONFIG,
 } from './types';
-import { MonitorPlay, RotateCcw, Layers, Copy, Download, X } from 'lucide-react';
+import { MonitorPlay, RotateCcw, Layers, Copy, Download, X, Bot } from 'lucide-react';
 import { createMultiDiskBundle } from './lib/multiDisk';
 import { exportVmCloneFile, importVmCloneFromFile } from './utils/cloneManager';
 
@@ -24,6 +24,8 @@ import Atari8BitEmulatorStage from './components/Atari8BitEmulatorStage';
 import AtariStEmulatorStage from './components/AtariStEmulatorStage';
 import UbuntuLinuxStage from './components/UbuntuLinuxStage';
 import TabBar from './components/TabBar';
+import AiBridgeDevPanel from './components/AiBridgeDevPanel';
+import { EmulatronAiBridge } from './lib/ai-bridge/bridgeCore';
 
 const defaultSession = (core: SystemCore): { config: EmulatorConfig; isPlaying: boolean; isProcessing: boolean; error: string | null } => ({
   config: {
@@ -101,6 +103,7 @@ export default function App() {
   ]);
 
   const [activeTabId, setActiveTabId] = useState<string>('tab-1');
+  const [isAiBridgeOpen, setIsAiBridgeOpen] = useState<boolean>(false);
   const stageRefs = useRef<Record<string, StageRefHandle | null>>({});
 
   const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
@@ -110,6 +113,46 @@ export default function App() {
       prevTabs.map(t => (t.id === activeTabId ? updater(t) : t))
     );
   };
+
+  // Connect active tab and emulator core to the AI Bridge
+  React.useEffect(() => {
+    const bridge = EmulatronAiBridge.getInstance();
+    bridge.getAdapter().setHost({
+      getActiveCore: () => activeTab.core,
+      isReady: () => activeTab.isPlaying,
+      getRomInfo: () => ({
+        name: activeTab.config.gameName || activeTab.config.romFile?.name || null,
+        size: activeTab.config.romFile?.size || null,
+        hash: null,
+      }),
+      loadRomFile: async (file: File) => {
+        const fileUrl = URL.createObjectURL(file);
+        updateActiveTab(prev => ({
+          ...prev,
+          core: 'nes',
+          isPlaying: true,
+          config: {
+            ...prev.config,
+            core: 'nes',
+            romFile: file,
+            romUrl: fileUrl,
+            gameName: file.name,
+            initialState: null,
+          },
+          error: null,
+        }));
+      },
+      resetCore: () => {
+        // Core reset handled via adapter and stage message
+      },
+      getIframeElement: () => {
+        return stageRefs.current[activeTabId]?.getIframeElement?.() || null;
+      },
+      getCanvasElement: () => {
+        return stageRefs.current[activeTabId]?.getCanvasElement?.() || null;
+      },
+    });
+  }, [activeTab, activeTabId]);
 
   const handleSelectTab = (id: string) => {
     setActiveTabId(id);
@@ -803,11 +846,20 @@ export default function App() {
           </div>
 
           {/* Status Footer */}
-          <div className="p-4 border-t border-neutral-900 bg-neutral-950/80 text-[11px] text-neutral-500 flex justify-between items-center">
+          <div className="p-4 border-t border-neutral-900 bg-neutral-950/80 text-[11px] text-neutral-500 flex justify-between items-center gap-2">
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-              <span>Вкладок відкрито: <b className="text-neutral-300 font-mono">{tabs.length}</b></span>
+              <span>Вкладок: <b className="text-neutral-300 font-mono">{tabs.length}</b></span>
             </div>
+            <button
+              type="button"
+              onClick={() => setIsAiBridgeOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-semibold transition-colors cursor-pointer"
+              title="Відкрити EMULATRON AI Bridge (NES Agent Protocol)"
+            >
+              <Bot className="w-3.5 h-3.5" />
+              <span>AI Bridge</span>
+            </button>
             <div>v2.5.0</div>
           </div>
         </div>
@@ -853,6 +905,18 @@ export default function App() {
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {/* AI Bridge Button */}
+                        <button
+                          type="button"
+                          onClick={() => setIsAiBridgeOpen(true)}
+                          className="px-3 py-2 bg-gradient-to-r from-sky-500/20 to-indigo-500/20 text-sky-300 hover:from-sky-500/30 hover:to-indigo-500/30 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 border border-sky-500/30 cursor-pointer shadow-lg shadow-sky-500/10"
+                          title="Відкрити EMULATRON AI Bridge (NES Agent Protocol)"
+                        >
+                          <Bot className="w-3.5 h-3.5 text-sky-400" />
+                          <span>AI Bridge</span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        </button>
+
                         {/* Clone Button */}
                         <button
                           type="button"
@@ -969,6 +1033,9 @@ export default function App() {
           })}
         </div>
       </div>
+
+      {/* EMULATRON AI Bridge Developer Panel */}
+      <AiBridgeDevPanel isOpen={isAiBridgeOpen} onClose={() => setIsAiBridgeOpen(false)} />
     </div>
   );
 }
